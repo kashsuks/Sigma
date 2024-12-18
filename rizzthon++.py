@@ -1,7 +1,7 @@
 import re
 import sys
 
-def sigmaInterpreter(code, filename=""):
+def rizzInterpreter(code, filename=""):
     lines = code.strip().split(";")
     variables = {}
     functions = {}
@@ -30,8 +30,11 @@ def sigmaInterpreter(code, filename=""):
             except ValueError:
                 raise TypeError(f"Argument for '{paramName}' must be of type {paramType}")
 
-        for line in funcBody:
-            executeLine(line, localVars)
+        executeBlock(funcBody, localVars)
+
+    def executeBlock(block, currentVars):
+        for line in block:
+            executeLine(line, currentVars)
 
     def executeLine(line, currentVars):
         line = line.strip()
@@ -62,16 +65,27 @@ def sigmaInterpreter(code, filename=""):
             parts = line[5:].strip().split("(")
             funcName = parts[0].strip()
             argsStr = parts[1][:-1].strip()
-            args = [arg.strip() for arg in argsStr.split(",")] if argsStr else []
+            args = []
+            if argsStr:
+                for arg in argsStr.split(','):
+                    arg = arg.strip()
+                    if arg in currentVars:
+                        args.append(currentVars[arg])
+                    else:
+                        try:
+                            args.append(int(arg))
+                        except ValueError:
+                            try:
+                                args.append(float(arg))
+                            except ValueError:
+                                args.append(arg.strip('"'))
             callFunction(funcName, args)
-        else:
-            return
 
     code = code.replace("BEGIN", "").replace("PERIOD", "").strip()
 
-    if "rob * from sigma" in code:
-        importedModules["sigma"] = {"yeet": yeet}
-        code = code.replace("rob * from sigma", "")
+    if "rob * from rizz" in code:
+        importedModules["rizz"] = {"yeet": yeet}
+        code = code.replace("rob * from rizz", "")
 
     functionMatch = re.findall(r"tweak\s+(\w+)\((.*?)\)\s*{(.*?)}", code, re.DOTALL)
     for match in functionMatch:
@@ -82,16 +96,15 @@ def sigmaInterpreter(code, filename=""):
 
     remainingCode = re.sub(r"tweak\s+(\w+)\((.*?)\)\s*{(.*?)}", "", code, flags=re.DOTALL).strip()
 
-    for line in remainingCode.split(";"):
-      executeLine(line, variables)
+    executeBlock(remainingCode.split(";"), variables)
 
-def runSigmaFile(filename):
-    if not filename.endswith(".sigma"):
-        raise ValueError("Filename must end with .sigma")
+def runRizzFile(filename):
+    if not filename.endswith(".rizz"):
+        raise ValueError("Filename must end with .rizz")
     try:
         with open(filename, "r") as f:
             code = f.read()
-            sigmaInterpreter(code, filename)
+            rizzInterpreter(code, filename)
     except FileNotFoundError:
         print(f"File not found: {filename}")
         sys.exit(1)
@@ -101,7 +114,7 @@ def runSigmaFile(filename):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python sigmaLang.py <filename.sigma>")
+        print("Usage: python rizzthon++.py <filename.rizz>")
         sys.exit(1)
     filename = sys.argv[1]
-    runSigmaFile(filename)
+    runRizzFile(filename)

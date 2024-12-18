@@ -1,11 +1,11 @@
 BEGIN
-rob * from sigma
+rob * from rizz
 
 int x = 3;
 tweak myFunc(int:num){
     yeet(num);
 }
 
-call myFunc(2);
+call myFunc(x);
 yeet(x)
 PERIOD
