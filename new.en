@@ -1,11 +1,11 @@
 BEGIN
 take * from english;
 
-integer x = 3;
+integer x = 3
 function myFunc(integer num){
     write(num);
 }
 
 call myFunc(x);
 write(x);
-PERIOD
+END
