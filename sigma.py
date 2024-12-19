@@ -7,7 +7,7 @@ def sigmaInterpreter(code, filename=""):
     functions = {}
     importedModules = {}
 
-    def yap(value):  # Changed from yeet to yap
+    def yap(value):
         print(value)
 
     def callFunction(funcName, args, currentVars):
@@ -35,7 +35,11 @@ def sigmaInterpreter(code, filename=""):
 
     def executeLine(line, currentVars):
         line = line.strip()
-        if not line or line.startswith("//"):
+
+        if line.startswith("//"):  # Correct comment handling
+            return
+
+        if not line: #check for empty lines
             return
 
         if line.startswith("int"):
@@ -46,8 +50,8 @@ def sigmaInterpreter(code, filename=""):
             except ValueError:
                 raise ValueError(f"Cannot assign non-integer value to int variable {varName}")
 
-        elif line.startswith("yap"):  # Changed from yeet to yap
-            value = line[4:-1].strip()  # Adjusted index for "yap"
+        elif line.startswith("yap"):
+            value = line[4:-1].strip()
             if value in currentVars:
                 yap(currentVars[value])
             else:
@@ -63,8 +67,6 @@ def sigmaInterpreter(code, filename=""):
             funcName = parts[0].strip()
             argsStr = parts[1][:-1].strip()
             args = [arg.strip() for arg in argsStr.split(",")] if argsStr else []
-
-            # Resolve variable arguments
             resolved_args = []
             for arg in args:
                 if arg in currentVars:
@@ -77,14 +79,14 @@ def sigmaInterpreter(code, filename=""):
                             resolved_args.append(float(arg))
                         except ValueError:
                             resolved_args.append(arg.strip('"'))
-            callFunction(funcName, resolved_args, currentVars)  # Pass currentVars
+            callFunction(funcName, resolved_args, currentVars)
         else:
-            return
+            raise SyntaxError(f"Invalid syntax: {line}")
 
     code = code.replace("BEGIN", "").replace("PERIOD", "").strip()
 
     if "rob * from sigma" in code:
-        importedModules["sigma"] = {"yap": yap}  # Changed from yeet to yap
+        importedModules["sigma"] = {"yap": yap}
         code = code.replace("rob * from sigma", "")
 
     functionMatch = re.findall(r"tweak\s+(\w+)\((.*?)\)\s*{(.*?)}", code, re.DOTALL)
@@ -97,7 +99,7 @@ def sigmaInterpreter(code, filename=""):
     remainingCode = re.sub(r"tweak\s+(\w+)\((.*?)\)\s*{(.*?)}", "", code, flags=re.DOTALL).strip()
 
     for line in remainingCode.split(";"):
-        executeLine(line, variables)  # Use variables dictionary
+        executeLine(line, variables)
 
 def runSigmaFile(filename):
     if not filename.endswith(".sigma"):

@@ -7,5 +7,6 @@ tweak myFunc(int:num){
 }
 
 call myFunc(x);
-yap(x)
+yap(x);
+//This is a comment
 PERIOD
