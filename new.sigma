@@ -1,12 +1,18 @@
 BEGIN
 rob * from sigma
 
-int x = 3;
+int x = 2;
+bool y = True;
+str a = "Hello, World!";
+float z = 3.14;
 tweak myFunc(int:num){
     yap(num);
 }
 
 call myFunc(x);
 yap(x);
+yap(y);
+yap(a);
+yap(z);
 //This is a comment
 PERIOD

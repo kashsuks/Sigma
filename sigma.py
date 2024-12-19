@@ -25,8 +25,19 @@ def sigmaInterpreter(code, filename=""):
             try:
                 if paramType == "int":
                     localVars[paramName] = int(args[i])
+                elif paramType == "bool":
+                    if args[i].lower() == "true":
+                        localVars[paramName] = True
+                    elif args[i].lower() == "false":
+                        localVars[paramName] = False
+                    else:
+                        raise ValueError(f"Argument for '{paramName}' must be a boolean (true or false)")
+                elif paramType == "str":
+                    localVars[paramName] = args[i].strip('"')  # Remove quotes for strings
+                elif paramType == "float":
+                    localVars[paramName] = float(args[i])
                 else:
-                    localVars[paramName] = args[i]
+                    raise TypeError(f"Unsupported data type: {paramType}")
             except ValueError:
                 raise TypeError(f"Argument for '{paramName}' must be of type {paramType}")
 
@@ -42,13 +53,26 @@ def sigmaInterpreter(code, filename=""):
         if not line: #check for empty lines
             return
 
-        if line.startswith("int"):
+        if line.startswith("int") or line.startswith("bool") or line.startswith("str") or line.startswith("float"):
             parts = line.split("=")
             varName = parts[0].split()[1].strip()
+            dataType = parts[0].split()[0].lower()  # Extract data type
             try:
-                currentVars[varName] = int(parts[1].strip())
+                if dataType == "int":
+                    currentVars[varName] = int(parts[1].strip())
+                elif dataType == "bool":
+                    if parts[1].strip().lower() == "true":
+                        currentVars[varName] = True
+                    elif parts[1].strip().lower() == "false":
+                        currentVars[varName] = False
+                    else:
+                        raise ValueError(f"Cannot assign non-boolean value to bool variable {varName}")
+                elif dataType == "str":
+                    currentVars[varName] = parts[1].strip('"')  # Remove quotes for strings
+                elif dataType == "float":
+                    currentVars[varName] = float(parts[1].strip())
             except ValueError:
-                raise ValueError(f"Cannot assign non-integer value to int variable {varName}")
+                raise ValueError(f"Cannot assign non-{dataType} value to {dataType} variable {varName}")
 
         elif line.startswith("yap"):
             value = line[4:-1].strip()
@@ -61,7 +85,10 @@ def sigmaInterpreter(code, filename=""):
                     try:
                         yap(float(value))
                     except ValueError:
-                        yap(value.strip('"'))
+                        try:
+                            yap(bool(value))  # Check for bool values (True/False)
+                        except ValueError:
+                            yap(value.strip('"'))
         elif line.startswith("call"):
             parts = line[5:].strip().split("(")
             funcName = parts[0].strip()
@@ -78,7 +105,16 @@ def sigmaInterpreter(code, filename=""):
                         try:
                             resolved_args.append(float(arg))
                         except ValueError:
-                            resolved_args.append(arg.strip('"'))
+                            try:
+                                resolved_args.append(eval(arg, {}, currentVars)) #added eval here to handle complex expressions
+                            except (NameError, TypeError, SyntaxError):
+                                if arg.lower() == "true":
+                                    resolved_args.append(True)
+                                elif arg.lower() == "false":
+                                    resolved_args.append(False)
+                                else:
+                                    resolved_args.append(arg.strip('"'))
+
             callFunction(funcName, resolved_args, currentVars)
         else:
             raise SyntaxError(f"Invalid syntax: {line}")
