@@ -101,7 +101,7 @@ def runSigmaFile(filename):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python sigmaLang.py <filename.sigma>")
+        print("Usage: python sigma.py <filename.sigma>")
         sys.exit(1)
     filename = sys.argv[1]
     runSigmaFile(filename)
