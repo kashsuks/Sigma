@@ -1,0 +1,11 @@
+BEGIN
+rob * from sigma
+
+int x = 3;
+tweak myFunc(int:num){
+    yeet(num);
+}
+
+call myFunc(2);
+yeet(x)
+PERIOD
