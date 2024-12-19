@@ -7,10 +7,10 @@ def sigmaInterpreter(code, filename=""):
     functions = {}
     importedModules = {}
 
-    def yeet(value):
+    def yap(value):  # Changed from yeet to yap
         print(value)
 
-    def callFunction(funcName, args):
+    def callFunction(funcName, args, currentVars):
         if funcName not in functions:
             raise NameError(f"Function '{funcName}' not defined")
 
@@ -19,7 +19,7 @@ def sigmaInterpreter(code, filename=""):
         if len(args) != len(funcParams):
             raise TypeError(f"Function '{funcName}' expects {len(funcParams)} arguments, but {len(args)} were given")
 
-        localVars = variables.copy()
+        localVars = currentVars.copy()
         for i, param in enumerate(funcParams):
             paramType, paramName = param.split(":")
             try:
@@ -46,31 +46,45 @@ def sigmaInterpreter(code, filename=""):
             except ValueError:
                 raise ValueError(f"Cannot assign non-integer value to int variable {varName}")
 
-        elif line.startswith("yeet"):
-            value = line[5:-1].strip()
+        elif line.startswith("yap"):  # Changed from yeet to yap
+            value = line[4:-1].strip()  # Adjusted index for "yap"
             if value in currentVars:
-                yeet(currentVars[value])
+                yap(currentVars[value])
             else:
                 try:
-                    yeet(int(value))
+                    yap(int(value))
                 except ValueError:
                     try:
-                        yeet(float(value))
+                        yap(float(value))
                     except ValueError:
-                        yeet(value.strip('"'))
+                        yap(value.strip('"'))
         elif line.startswith("call"):
             parts = line[5:].strip().split("(")
             funcName = parts[0].strip()
             argsStr = parts[1][:-1].strip()
             args = [arg.strip() for arg in argsStr.split(",")] if argsStr else []
-            callFunction(funcName, args)
+
+            # Resolve variable arguments
+            resolved_args = []
+            for arg in args:
+                if arg in currentVars:
+                    resolved_args.append(currentVars[arg])
+                else:
+                    try:
+                        resolved_args.append(int(arg))
+                    except ValueError:
+                        try:
+                            resolved_args.append(float(arg))
+                        except ValueError:
+                            resolved_args.append(arg.strip('"'))
+            callFunction(funcName, resolved_args, currentVars)  # Pass currentVars
         else:
             return
 
     code = code.replace("BEGIN", "").replace("PERIOD", "").strip()
 
     if "rob * from sigma" in code:
-        importedModules["sigma"] = {"yeet": yeet}
+        importedModules["sigma"] = {"yap": yap}  # Changed from yeet to yap
         code = code.replace("rob * from sigma", "")
 
     functionMatch = re.findall(r"tweak\s+(\w+)\((.*?)\)\s*{(.*?)}", code, re.DOTALL)
@@ -83,7 +97,7 @@ def sigmaInterpreter(code, filename=""):
     remainingCode = re.sub(r"tweak\s+(\w+)\((.*?)\)\s*{(.*?)}", "", code, flags=re.DOTALL).strip()
 
     for line in remainingCode.split(";"):
-      executeLine(line, variables)
+        executeLine(line, variables)  # Use variables dictionary
 
 def runSigmaFile(filename):
     if not filename.endswith(".sigma"):

@@ -3,9 +3,9 @@ rob * from sigma
 
 int x = 3;
 tweak myFunc(int:num){
-    yeet(num);
+    yap(num);
 }
 
-call myFunc(2);
-yeet(x)
+call myFunc(x);
+yap(x)
 PERIOD
