@@ -25,3 +25,24 @@ I built this language to enhance my understanding of compiler design but for dum
 ### Code comments
 - `//`: Single line or in-line comments
 - `/*` and `*/`: Used to start and end multi-line comments
+
+
+## Usage
+In order to use Sigma Language clone the github repo using the following command:
+```bash
+git clone https://github.com/kashsuks/Sigma
+```
+followed by,
+
+```bash
+cd Sigma
+```
+
+Once you're in the `Sigma` directory, create a file with the `.sigma` extention and run it using the following command:
+```bash
+python sigma.py <filename.sigma>
+```
+Once the code is compiled, it will automatically display the result in the console. Enjoy :)
+
+## License
+This project is under the MIT License
