@@ -1,6 +1,11 @@
 BEGIN
 rob * from sigma
 
+/* Multline test
+
+This is a comment */
+
+
 int x = 2
 int y = 1 + 2 + 1 //This is math
 str a = "Hello, World!"
