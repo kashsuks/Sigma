@@ -1,159 +1,166 @@
 import re
 import sys
+from typing import Any, Dict, List, Union
 
-def sigmaInterpreter(code, filename=""):
-    lines = code.strip().split(";")
-    variables = {}
-    functions = {}
-    importedModules = {}
+class SigmaInterpreter:
+    def __init__(self):
+        self.variables: Dict[str, Any] = {}
+        self.functions: Dict[str, dict] = {}
+    
+    def parseFile(self, filePath: str) -> None:
+        try:
+            with open(filePath, 'r') as file:
+                code = file.read()
+            self.parseAndExecute(code)
+        except FileNotFoundError:
+            print(f"Error: Could not find Sigma file: {filePath}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            sys.exit(1)
+    
+    def tokenize(self, code: str) -> List[str]:
+        # Remove comments
+        code = re.sub(r'//.*', '', code)
+        # Split into lines and remove empty lines
+        lines = [line.strip() for line in code.split('\n') if line.strip()]
+        return lines
 
-    def yap(value):
-        print(value)
+    def parseAndExecute(self, code: str) -> None:
+        lines = self.tokenize(code)
+        
+        if lines[0] != "BEGIN" or lines[-1] != "PERIOD":
+            raise SyntaxError("Code must start with BEGIN and end with PERIOD")
+        
+        # Remove BEGIN and PERIOD
+        lines = lines[1:-1]
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            
+            # Skip imports for now
+            if line.startswith('rob'):
+                i += 1
+                continue
+                
+            # Function definition
+            if line.startswith('tweak'):
+                funcDef = self.parseFunction(lines[i:])
+                i += funcDef['linesConsumed']
+                continue
+                
+            # Function call
+            if line.startswith('call'):
+                self.executeFunctionCall(line)
+                
+            # Variable declaration
+            elif any(typeName in line for typeName in ['int', 'bool', 'str', 'float']):
+                self.declareVariable(line)
+                
+            # Built-in function calls
+            elif line.startswith('yap'):
+                self.executeYap(line)
+                
+            i += 1
 
-    def callFunction(funcName, args, currentVars):
-        if funcName not in functions:
-            raise NameError(f"Function '{funcName}' not defined")
+    def parseFunction(self, lines: List[str]) -> dict:
+        firstLine = lines[0]
+        match = re.match(r'tweak\s+(\w+)\((\w+):\s*(\w+)\)\s*{', firstLine)
+        if not match:
+            raise SyntaxError(f"Invalid function definition: {firstLine}")
+            
+        funcName = match.group(1)
+        paramName = match.group(2)
+        paramType = match.group(3)
+        
+        bodyLines = []
+        linesConsumed = 1
+        
+        for line in lines[1:]:
+            if line.strip() == '}':
+                break
+            bodyLines.append(line.strip())
+            linesConsumed += 1
+        
+        self.functions[funcName] = {
+            'paramName': paramName,
+            'paramType': paramType,
+            'body': bodyLines
+        }
+        
+        return {'linesConsumed': linesConsumed + 1}
 
-        funcParams, funcBody = functions[funcName]
+    def declareVariable(self, line: str) -> None:
+        parts = line.split('=')
+        if len(parts) != 2:
+            raise SyntaxError(f"Invalid variable declaration: {line}")
+            
+        varDef = parts[0].strip()
+        value = parts[1].strip()
+        
+        typeName, varName = varDef.split()
+        varName = varName.strip()
+        
+        # Convert value based on type
+        if typeName == 'int':
+            value = int(value)
+        elif typeName == 'bool':
+            value = value.lower() == 'true'
+        elif typeName == 'str':
+            value = value.strip('"')
+        elif typeName == 'float':
+            value = float(value)
+            
+        self.variables[varName] = value
 
-        if len(args) != len(funcParams):
-            raise TypeError(f"Function '{funcName}' expects {len(funcParams)} arguments, but {len(args)} were given")
+    def executeYap(self, line: str) -> None:
+        match = re.match(r'yap\((\w+)\)', line)
+        if not match:
+            raise SyntaxError(f"Invalid yap statement: {line}")
+            
+        varName = match.group(1)
+        if varName not in self.variables:
+            raise NameError(f"Variable '{varName}' not found")
+            
+        print(self.variables[varName])
 
-        localVars = currentVars.copy()
-        for i, param in enumerate(funcParams):
-            paramType, paramName = param.split(":")
-            try:
-                if paramType == "int":
-                    localVars[paramName] = int(args[i])
-                elif paramType == "bool":
-                    if args[i].lower() == "true":
-                        localVars[paramName] = True
-                    elif args[i].lower() == "false":
-                        localVars[paramName] = False
-                    else:
-                        raise ValueError(f"Argument for '{paramName}' must be a boolean (true or false)")
-                elif paramType == "str":
-                    localVars[paramName] = args[i].strip('"')  # Remove quotes for strings
-                elif paramType == "float":
-                    localVars[paramName] = float(args[i])
-                else:
-                    raise TypeError(f"Unsupported data type: {paramType}")
-            except ValueError:
-                raise TypeError(f"Argument for '{paramName}' must be of type {paramType}")
+    def executeFunctionCall(self, line: str) -> None:
+        match = re.match(r'call\s+(\w+)\((\w+)\)', line)
+        if not match:
+            raise SyntaxError(f"Invalid function call: {line}")
+            
+        funcName = match.group(1)
+        argName = match.group(2)
+        
+        if funcName not in self.functions:
+            raise NameError(f"Function '{funcName}' not found")
+            
+        if argName not in self.variables:
+            raise NameError(f"Variable '{argName}' not found")
+            
+        func = self.functions[funcName]
+        
+        # Execute function body
+        for bodyLine in func['body']:
+            # Replace parameter with argument in the body
+            executedLine = bodyLine.replace(func['paramName'], argName)
+            
+            if executedLine.startswith('yap'):
+                self.executeYap(executedLine)
 
-        for line in funcBody:
-            executeLine(line, localVars)
-
-    def executeLine(line, currentVars):
-        line = line.strip()
-
-        if line.startswith("//"):  # Correct comment handling
-            return
-
-        if not line: #check for empty lines
-            return
-
-        if line.startswith("int") or line.startswith("bool") or line.startswith("str") or line.startswith("float"):
-            parts = line.split("=")
-            varName = parts[0].split()[1].strip()
-            dataType = parts[0].split()[0].lower()  # Extract data type
-            try:
-                if dataType == "int":
-                    currentVars[varName] = int(parts[1].strip())
-                elif dataType == "bool":
-                    if parts[1].strip().lower() == "true":
-                        currentVars[varName] = True
-                    elif parts[1].strip().lower() == "false":
-                        currentVars[varName] = False
-                    else:
-                        raise ValueError(f"Cannot assign non-boolean value to bool variable {varName}")
-                elif dataType == "str":
-                    currentVars[varName] = parts[1].strip('"')  # Remove quotes for strings
-                elif dataType == "float":
-                    currentVars[varName] = float(parts[1].strip())
-            except ValueError:
-                raise ValueError(f"Cannot assign non-{dataType} value to {dataType} variable {varName}")
-
-        elif line.startswith("yap"):
-            value = line[4:-1].strip()
-            if value in currentVars:
-                yap(currentVars[value])
-            else:
-                try:
-                    yap(int(value))
-                except ValueError:
-                    try:
-                        yap(float(value))
-                    except ValueError:
-                        try:
-                            yap(bool(value))  # Check for bool values (True/False)
-                        except ValueError:
-                            yap(value.strip('"'))
-        elif line.startswith("call"):
-            parts = line[5:].strip().split("(")
-            funcName = parts[0].strip()
-            argsStr = parts[1][:-1].strip()
-            args = [arg.strip() for arg in argsStr.split(",")] if argsStr else []
-            resolved_args = []
-            for arg in args:
-                if arg in currentVars:
-                    resolved_args.append(currentVars[arg])
-                else:
-                    try:
-                        resolved_args.append(int(arg))
-                    except ValueError:
-                        try:
-                            resolved_args.append(float(arg))
-                        except ValueError:
-                            try:
-                                resolved_args.append(eval(arg, {}, currentVars)) #added eval here to handle complex expressions
-                            except (NameError, TypeError, SyntaxError):
-                                if arg.lower() == "true":
-                                    resolved_args.append(True)
-                                elif arg.lower() == "false":
-                                    resolved_args.append(False)
-                                else:
-                                    resolved_args.append(arg.strip('"'))
-
-            callFunction(funcName, resolved_args, currentVars)
-        else:
-            raise SyntaxError(f"Invalid syntax: {line}")
-
-    code = code.replace("BEGIN", "").replace("PERIOD", "").strip()
-
-    if "rob * from sigma" in code:
-        importedModules["sigma"] = {"yap": yap}
-        code = code.replace("rob * from sigma", "")
-
-    functionMatch = re.findall(r"tweak\s+(\w+)\((.*?)\)\s*{(.*?)}", code, re.DOTALL)
-    for match in functionMatch:
-        funcName, paramsStr, funcBody = match
-        params = [p.strip() for p in paramsStr.split(",")] if paramsStr else []
-        body = [b.strip() for b in funcBody.strip().split(";")]
-        functions[funcName] = (params, body)
-
-    remainingCode = re.sub(r"tweak\s+(\w+)\((.*?)\)\s*{(.*?)}", "", code, flags=re.DOTALL).strip()
-
-    for line in remainingCode.split(";"):
-        executeLine(line, variables)
-
-def runSigmaFile(filename):
-    if not filename.endswith(".sigma"):
-        raise ValueError("Filename must end with .sigma")
-    try:
-        with open(filename, "r") as f:
-            code = f.read()
-            sigmaInterpreter(code, filename)
-    except FileNotFoundError:
-        print(f"File not found: {filename}")
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python3 sigma.py <filename.sigma>")
         sys.exit(1)
-    except Exception as e:
-        print(f"Error in {filename}: {e}")
+        
+    filePath = sys.argv[1]
+    if not filePath.endswith('.sigma'):
+        print("Error: File must have .sigma extension")
         sys.exit(1)
+        
+    interpreter = SigmaInterpreter()
+    interpreter.parseFile(filePath)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python sigma.py <filename.sigma>")
-        sys.exit(1)
-    filename = sys.argv[1]
-    runSigmaFile(filename)
+    main()
