@@ -6,7 +6,7 @@ I built this language to enhance my understanding of compiler design but for dum
 
 ## Keywords/Syntax
 - `BEGIN`: Always at the start of the program to begin the code
-- `END`: Always at the end of the program to end the code
+- `PERIOD`: Always at the end of the program to end the code
 - `rob * from sigma`: Importing the interpreter. Similar to what `#include <stdio.h>` does in a C file
 
 ### Data Types
