@@ -24,3 +24,4 @@ I built this language to enhance my understanding of compiler design but for dum
 
 ### Code comments
 - `//`: Single line or in-line comments
+- `/*` and `*/`: Used to start and end multi-line comments
