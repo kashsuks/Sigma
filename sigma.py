@@ -18,6 +18,40 @@ class SigmaInterpreter:
         except Exception as e:
             print(f"Error: {str(e)}")
             sys.exit(1)
+
+    def evaluateMathExpression(self, expr: str) -> Union[int, float]:
+        # Replace variables with their values
+        for varName, varValue in self.variables.items():
+            if isinstance(varValue, (int, float)):
+                expr = expr.replace(varName, str(varValue))
+        
+        # Handle basic operations
+        if '+' in expr:
+            parts = expr.split('+')
+            return sum(float(part.strip()) for part in parts)
+        elif '-' in expr:
+            parts = expr.split('-')
+            result = float(parts[0].strip())
+            for part in parts[1:]:
+                result -= float(part.strip())
+            return result
+        elif '*' in expr:
+            parts = expr.split('*')
+            result = 1
+            for part in parts:
+                result *= float(part.strip())
+            return result
+        elif '/' in expr:
+            parts = expr.split('/')
+            result = float(parts[0].strip())
+            for part in parts[1:]:
+                value = float(part.strip())
+                if value == 0:
+                    raise ZeroDivisionError("Division by zero")
+                result /= value
+            return result
+        else:
+            return float(expr.strip())
     
     def tokenize(self, code: str) -> List[str]:
         # Remove comments
@@ -102,15 +136,20 @@ class SigmaInterpreter:
         typeName, varName = varDef.split()
         varName = varName.strip()
         
-        # Convert value based on type
-        if typeName == 'int':
-            value = int(value)
+        # Handle mathematical expressions in variable declarations
+        if typeName in ['int', 'float']:
+            try:
+                evaluated_value = self.evaluateMathExpression(value)
+                if typeName == 'int':
+                    value = int(evaluated_value)
+                else:
+                    value = float(evaluated_value)
+            except Exception as e:
+                raise SyntaxError(f"Invalid mathematical expression: {value}")
         elif typeName == 'bool':
             value = value.lower() == 'true'
         elif typeName == 'str':
             value = value.strip('"')
-        elif typeName == 'float':
-            value = float(value)
             
         self.variables[varName] = value
 

@@ -2,7 +2,7 @@ BEGIN
 rob * from sigma
 
 int x = 2
-bool y = True
+int y = 1 + 2 + 1 //This is math
 str a = "Hello, World!"
 float z = 3.14
 
