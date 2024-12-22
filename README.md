@@ -26,6 +26,8 @@ I built this language to enhance my understanding of compiler design but for dum
 - `//`: Single line or in-line comments
 - `/*` and `*/`: Used to start and end multi-line comments
 
+### Arrays
+- `arrayzler<datatype> variableName = [comma-seperated-values]: Initialize and define values in an array using this syntax
 
 ## Usage
 In order to use Sigma Language clone the github repo using the following command:
