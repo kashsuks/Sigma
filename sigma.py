@@ -96,6 +96,9 @@ class SigmaInterpreter:
             if line.startswith('call'):
                 self.executeFunctionCall(line)
 
+            elif line.startswith('arraryzler'):
+                self.declareArray(line)
+
             elif any(typeName in line for typeName in ['int', 'bool', 'str', 'float']):
                 self.declareVariable(line)
 
@@ -130,6 +133,30 @@ class SigmaInterpreter:
         }
         
         return {'linesConsumed': linesConsumed + 1}
+
+    def declareArray(self, line: str) -> None:
+        match = re.match(r'arraryzler<(\w+)>\s+(\w+)\s*=\s*\[(.*)\]', line)
+        if not match:
+            raise SyntaxError(f"Invalid array declaration: {line}")
+        
+        dataType = match.group(1)
+        varName = match.group(2)
+        values = [v.strip() for v in match.group(3).split(',')]
+        try:
+            if dataType == 'int':
+                array = [int(self.evaluateMathExpression(v)) for v in values]
+            elif dataType == 'float':
+                array = [float(self.evaluateMathExpression(v)) for v in values]
+            elif dataType == 'bool':
+                array = [v.lower() == 'true' for v in values]
+            elif dataType == 'str':
+                array = [v.strip('"') for v in values]
+            else:
+                raise SyntaxError(f"Unsupported array data type: {dataType}")
+        except Exception as e:
+            raise SyntaxError(f"Error converting array values to type {dataType}: {str(e)}")
+        
+        self.variables[varName] = array
 
     def declareVariable(self, line: str) -> None:
         parts = line.split('=')
