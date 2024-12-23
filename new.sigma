@@ -22,6 +22,6 @@ yap(y) // Prints 4
 yap(a) // "Hello, World!"
 yap(z) // Prints 3.14
 yap(arr) // Prints [1, 2, 3]
-yap(arr[0]) // This throws an error since the logic to access specific indexes is not written (yet)
+yap(arr[0]) // Should print 1
 //This is a comment
 PERIOD

@@ -21,6 +21,22 @@ class SigmaInterpreter:
             sys.exit(1)
 
     def evaluateMathExpression(self, expr: str) -> Union[int, float]:
+        arrayPattern = r'(\w+)\[(\d+)\]'
+        arrayMatches = re.finditer(arrayPattern, expr)
+    
+        for match in arrayMatches:
+            arrName = match.group(1)
+            index = int(match.group(2))
+            if arrName in self.variables:
+                arr = self.variables[arrName]
+                if isinstance(arr, list):
+                    if 0 <= index < len(arr):
+                        expr = expr.replace(match.group(0), str(arr[index]))
+                    else:
+                        raise IndexError(f"Array index {index} out of bounds for array {arrName}")
+                else:
+                    raise TypeError(f"Variable {arrName} is not an array")
+    
         for varName, varValue in self.variables.items():
             if isinstance(varValue, (int, float)):
                 expr = expr.replace(varName, str(varValue))
@@ -96,7 +112,7 @@ class SigmaInterpreter:
             if line.startswith('call'):
                 self.executeFunctionCall(line)
 
-            elif line.startswith('arraryzler'):
+            elif line.startswith('arrayzler'):
                 self.declareArray(line)
 
             elif any(typeName in line for typeName in ['int', 'bool', 'str', 'float']):
@@ -135,7 +151,7 @@ class SigmaInterpreter:
         return {'linesConsumed': linesConsumed + 1}
 
     def declareArray(self, line: str) -> None:
-        match = re.match(r'arraryzler<(\w+)>\s+(\w+)\s*=\s*\[(.*)\]', line)
+        match = re.match(r'arrayzler<(\w+)>\s+(\w+)\s*=\s*\[(.*)\]', line)
         if not match:
             raise SyntaxError(f"Invalid array declaration: {line}")
         
@@ -171,11 +187,11 @@ class SigmaInterpreter:
         
         if typeName in ['int', 'float']:
             try:
-                evaluated_value = self.evaluateMathExpression(value)
+                evaluatedValue = self.evaluateMathExpression(value)
                 if typeName == 'int':
-                    value = int(evaluated_value)
+                    value = int(evaluatedValue)
                 else:
-                    value = float(evaluated_value)
+                    value = float(evaluatedValue)
             except Exception as e:
                 raise SyntaxError(f"Invalid mathematical expression: {value}")
         elif typeName == 'bool':
@@ -186,15 +202,34 @@ class SigmaInterpreter:
         self.variables[varName] = value
 
     def executeYap(self, line: str) -> None:
-        match = re.match(r'yap\((\w+)\)', line)
+        match = re.match(r'yap\((\w+(?:\[\d+\])?)\)', line)
         if not match:
             raise SyntaxError(f"Invalid yap statement: {line}")
+    
+        expr = match.group(1)
+        arrayMatch = re.match(r'(\w+)\[(\d+)\]', expr)
+        
+        if arrayMatch:
+            arrName = arrayMatch.group(1)
+            index = int(arrayMatch.group(2))
             
-        varName = match.group(1)
-        if varName not in self.variables:
-            raise NameError(f"Variable '{varName}' not found")
-            
-        print(self.variables[varName])
+            if arrName not in self.variables:
+                raise NameError(f"Array '{arrName}' not found")
+                
+            arr = self.variables[arrName]
+            if not isinstance(arr, list):
+                raise TypeError(f"Variable '{arrName}' is not an array")
+                
+            if 0 <= index < len(arr):
+                print(arr[index])
+            else:
+                raise IndexError(f"Array index {index} out of bounds for array {arrName}")
+        else:
+            varName = expr
+            if varName not in self.variables:
+                raise NameError(f"Variable '{varName}' not found")
+                
+            print(self.variables[varName])
 
     def executeFunctionCall(self, line: str) -> None:
         match = re.match(r'call\s+(\w+)\((\w+)\)', line)
