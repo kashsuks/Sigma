@@ -1,0 +1,15 @@
+BEGIN
+
+rob * from sigma
+
+//Sum of two numbers
+int sumOfTwo = 1 + 2 
+yap(sumOfTwo) // Outputs: 3
+// Final verdict: PASSED
+
+//Testing Order of Operations
+int orderOfOp = 3*2+2
+yap(orderOfOp) // Outputs: Error: Invalid mathematical expression: 3*2+2
+//Final Verdict: FAILED
+
+PERIOD
