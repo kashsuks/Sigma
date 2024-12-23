@@ -21,52 +21,105 @@ class SigmaInterpreter:
             sys.exit(1)
 
     def evaluateMathExpression(self, expr: str) -> Union[int, float]:
-        arrayPattern = r'(\w+)\[(\d+)\]'
-        arrayMatches = re.finditer(arrayPattern, expr)
-    
-        for match in arrayMatches:
-            arrName = match.group(1)
-            index = int(match.group(2))
-            if arrName in self.variables:
-                arr = self.variables[arrName]
-                if isinstance(arr, list):
-                    if 0 <= index < len(arr):
-                        expr = expr.replace(match.group(0), str(arr[index]))
-                    else:
-                        raise IndexError(f"Array index {index} out of bounds for array {arrName}")
-                else:
+        def parseNumber() -> Union[int, float]:
+            nonlocal pos
+            start = pos
+            while pos < len(tokens) and (tokens[pos].isdigit() or tokens[pos] == '.'):
+                pos += 1
+            return float(tokens[start:pos])
+
+        def parsePower() -> Union[int, float]:
+            nonlocal pos
+            result = parseFactor()
+            
+            while pos < len(tokens) and tokens[pos] == '*' and pos + 1 < len(tokens) and tokens[pos + 1] == '*':
+                pos += 2
+                right = parseFactor()
+                result = result ** right
+                
+            return result
+
+        def parseFactor() -> Union[int, float]:
+            nonlocal pos
+            
+            if pos >= len(tokens):
+                raise SyntaxError("Unexpected end of expression")
+
+            if tokens[pos] == '(':
+                pos += 1
+                result = parseExpression()
+                if pos >= len(tokens) or tokens[pos] != ')':
+                    raise SyntaxError("Missing closing parenthesis")
+                pos += 1
+                return result
+                
+            if tokens[pos].isdigit() or tokens[pos] == '.':
+                return parseNumber()
+                
+            start = pos
+            while pos < len(tokens) and (tokens[pos].isalnum() or tokens[pos] in '[]'):
+                pos += 1
+            varExpr = tokens[start:pos]
+            
+            arrayMatch = re.match(r'(\w+)\[(\d+)\]', varExpr)
+            if arrayMatch:
+                arrName = arrayMatch.group(1)
+                index = int(arrayMatch.group(2))
+                if arrName in self.variables:
+                    arr = self.variables[arrName]
+                    if isinstance(arr, list):
+                        if 0 <= index < len(arr):
+                            return float(arr[index])
+                        raise IndexError(f"Array index {index} out of bounds")
                     raise TypeError(f"Variable {arrName} is not an array")
-    
-        for varName, varValue in self.variables.items():
-            if isinstance(varValue, (int, float)):
-                expr = expr.replace(varName, str(varValue))
+            elif varExpr in self.variables:
+                return float(self.variables[varExpr])
+                
+            raise SyntaxError(f"Invalid term in expression: {varExpr}")
+
+        def parseTerm() -> Union[int, float]:
+            nonlocal pos
+            result = parsePower()
+            
+            while pos < len(tokens) and tokens[pos] in '*/:':
+                op = tokens[pos]
+                pos += 1
+                right = parsePower()
+                
+                if op == '*':
+                    result *= right
+                elif op == '/':
+                    if right == 0:
+                        raise ZeroDivisionError("Division by zero")
+                    result /= right
+                    
+            return result
+
+        def parseExpression() -> Union[int, float]:
+            nonlocal pos
+            result = parseTerm()
+            
+            while pos < len(tokens) and tokens[pos] in '+-':
+                op = tokens[pos]
+                pos += 1
+                right = parseTerm()
+                
+                if op == '+':
+                    result += right
+                elif op == '-':
+                    result -= right
+                    
+            return result
+
+        expr = ''.join(expr.split())
+        tokens = expr
+        pos = 0
         
-        if '+' in expr:
-            parts = expr.split('+')
-            return sum(float(part.strip()) for part in parts)
-        elif '-' in expr:
-            parts = expr.split('-')
-            result = float(parts[0].strip())
-            for part in parts[1:]:
-                result -= float(part.strip())
-            return result
-        elif '*' in expr:
-            parts = expr.split('*')
-            result = 1
-            for part in parts:
-                result *= float(part.strip())
-            return result
-        elif '/' in expr:
-            parts = expr.split('/')
-            result = float(parts[0].strip())
-            for part in parts[1:]:
-                value = float(part.strip())
-                if value == 0:
-                    raise ZeroDivisionError("Division by zero")
-                result /= value
-            return result
-        else:
-            return float(expr.strip())
+        result = parseExpression()
+        if pos < len(tokens):
+            raise SyntaxError(f"Invalid syntax in expression: {expr}")
+            
+        return result
 
     def tokenize(self, code: str) -> List[str]:
         lines = []
