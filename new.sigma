@@ -13,7 +13,7 @@ float z = 3.14
 arrayzler<int> arr = [1, 2, 3]
 
 tweak myFunc(int: x) {
-  yap(x)
+  its giving (x)
 }
 
 call myFunc(x) //Prints 2
@@ -23,7 +23,8 @@ yap(a) // "Hello, World!"
 yap(z) // Prints 3.14
 yap(arr) // Prints [1, 2, 3]
 yap(arr[0]) // Should print 1
-
+arr.asl(4) // This should append 4
+yap(arr) // Prints [1, 2, 3, 4]
 //This is a comment
 
 PERIOD

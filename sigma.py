@@ -112,6 +112,9 @@ class SigmaInterpreter:
             if line.startswith('call'):
                 self.executeFunctionCall(line)
 
+            elif '.asl(' in line:
+                self.executeArrayAppend(line)
+
             elif line.startswith('arrayzler'):
                 self.declareArray(line)
 
@@ -123,6 +126,38 @@ class SigmaInterpreter:
 
             i += 1
 
+    def executeArrayAppend(self, line: str) -> None:
+        match = re.match(r'(\w+)\.asl\((.*)\)', line)
+        if not match:
+            raise SyntaxError(f"Invalid array append operation: {line}")
+        
+        arrName = match.group(1)
+        value = match.group(2).strip()
+        
+        if arrName not in self.variables:
+            raise NameError(f"Array '{arrName}' not found")
+            
+        arr = self.variables[arrName]
+        if not isinstance(arr, list):
+            raise TypeError(f"Variable '{arrName}' is not an array")
+            
+        try:
+            if isinstance(arr[0], int):
+                evalValue = int(self.evaluateMathExpression(value))
+            elif isinstance(arr[0], float):
+                evalValue = float(self.evaluateMathExpression(value))
+            elif isinstance(arr[0], bool):
+                evalValue = value.lower() == 'true'
+            elif isinstance(arr[0], str):
+                evalValue = value.strip('"')
+            else:
+                raise TypeError(f"Unsupported array type")
+                
+            arr.append(evalValue)
+            self.variables[arrName] = arr
+        except Exception as e:
+            raise TypeError(f"Value type doesn't match array type: {str(e)}")
+    
     def parseFunction(self, lines: List[str]) -> dict:
         firstLine = lines[0]
         match = re.match(r'tweak\s+(\w+)\((\w+):\s*(\w+)\)\s*{', firstLine)
@@ -231,7 +266,7 @@ class SigmaInterpreter:
                 
             print(self.variables[varName])
 
-    def executeFunctionCall(self, line: str) -> None:
+    def executeFunctionCall(self, line: str) -> Any:
         match = re.match(r'call\s+(\w+)\((\w+)\)', line)
         if not match:
             raise SyntaxError(f"Invalid function call: {line}")
@@ -250,8 +285,24 @@ class SigmaInterpreter:
         for bodyLine in func['body']:
             executedLine = bodyLine.replace(func['paramName'], argName)
             
-            if executedLine.startswith('yap'):
+            if executedLine.startswith('its giving'):
+                return self.executeReturn(executedLine)
+            elif executedLine.startswith('yap'):
                 self.executeYap(executedLine)
+                
+    def executeReturn(self, line: str) -> Any:
+        match = re.match(r'its\s+giving\s*\((.*)\)', line)
+        if not match:
+            raise SyntaxError(f"Invalid return statement: {line}")
+            
+        expr = match.group(1).strip()
+        
+        try:
+            if expr in self.variables:
+                return self.variables[expr]
+            return self.evaluateMathExpression(expr)
+        except:
+            return expr.strip('"')
 
 def main():
     if len(sys.argv) != 2:
