@@ -27,24 +27,25 @@ I built this language to enhance my understanding of compiler design but for dum
 - `/*` and `*/`: Used to start and end multi-line comments
 
 ### Arrays
-- `arrayzler<datatype> variableName = [comma-seperated-values]: Initialize and define values in an array using this syntax
+- `arrayzler<datatype> variableName = [comma-seperated-values]`: Initialize and define values in an array using this syntax
+- `variableName[index] = value`: You can access values in an array using 0-indexing. The syntax is similar to that of pyhon.
 
 ## Usage
-In order to use Sigma Language clone the github repo using the following command:
+1) In order to use Sigma Language clone the github repo using the following command:
 ```bash
 git clone https://github.com/kashsuks/Sigma
 ```
-followed by,
+2) Followed by,
 
 ```bash
 cd Sigma
 ```
 
-Once you're in the `Sigma` directory, create a file with the `.sigma` extention and run it using the following command:
+3) Once you're in the `Sigma` directory, create a file with the `.sigma` extention and run it using the following command:
 ```bash
 python sigma.py <filename.sigma>
 ```
-Once the code is compiled, it will automatically display the result in the console. Enjoy :)
+4) Once the interpreter has processed the code, it will automatically display the result in the console. Enjoy :)
 
 ## License
 This project is under the MIT License
