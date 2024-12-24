@@ -18,6 +18,7 @@ I built this language to enhance my understanding of compiler design but for dum
 ### Functions
 - `tweak`: Initializing a function. Similar to `def` in python
 - `call`: Used to call a function with its requested arguments
+- `its giving (value)`: Returns `value`
 
 ### Output
 - `yap`: Used to print a value, or a variable to the console. Similar to `print` in python
@@ -29,6 +30,7 @@ I built this language to enhance my understanding of compiler design but for dum
 ### Arrays
 - `arrayzler<datatype> variableName = [comma-seperated-values]`: Initialize and define values in an array using this syntax
 - `variableName[index] = value`: You can access values in an array using 0-indexing. The syntax is similar to that of pyhon.
+- `variable.asl(value)`: Appends `value` at the end of the list
 
 ## Usage
 1) In order to use Sigma Language clone the github repo using the following command:
