@@ -162,23 +162,45 @@ class SigmaInterpreter:
                 i += funcDef['linesConsumed']
                 continue
 
-            if line.startswith('call'):
+            if '=' in line and 'call' in line:
+                self.handleFunctionAssignment(line)
+            elif line.startswith('call'):
                 self.executeFunctionCall(line)
-
             elif '.asl(' in line:
                 self.executeArrayAppend(line)
-
             elif line.startswith('arrayzler'):
                 self.declareArray(line)
-
             elif any(typeName in line for typeName in ['int', 'bool', 'str', 'float']):
                 self.declareVariable(line)
-
             elif line.startswith('yap'):
                 self.executeYap(line)
 
             i += 1
-
+            
+    def handleFunctionAssignment(self, line: str) -> None:
+        parts = line.split('=')
+        if len(parts) != 2:
+            raise SyntaxError(f"Invalid function assignment: {line}")
+            
+        varDef = parts[0].strip()
+        funcCall = parts[1].strip()
+        
+        typeName, varName = varDef.split()
+        varName = varName.strip()
+        
+        result = self.executeFunctionCall(funcCall)
+        
+        if typeName == 'int':
+            self.variables[varName] = int(result)
+        elif typeName == 'float':
+            self.variables[varName] = float(result)
+        elif typeName == 'bool':
+            self.variables[varName] = bool(result)
+        elif typeName == 'str':
+            self.variables[varName] = str(result)
+        else:
+            raise TypeError(f"Unsupported return type: {typeName}")
+    
     def executeArrayAppend(self, line: str) -> None:
         match = re.match(r'(\w+)\.asl\((.*)\)', line)
         if not match:
@@ -213,13 +235,22 @@ class SigmaInterpreter:
     
     def parseFunction(self, lines: List[str]) -> dict:
         firstLine = lines[0]
-        match = re.match(r'tweak\s+(\w+)\((\w+):\s*(\w+)\)\s*{', firstLine)
+        match = re.match(r'tweak\s+(\w+)\s*\((.*?)\)\s*{', firstLine)
         if not match:
             raise SyntaxError(f"Invalid function definition: {firstLine}")
             
         funcName = match.group(1)
-        paramName = match.group(2)
-        paramType = match.group(3)
+        params = match.group(2).strip()
+        
+        paramDict = {}
+        if params:
+            param_parts = params.split(':')
+            if len(param_parts) != 2:
+                raise SyntaxError(f"Invalid parameter format: {params}")
+            paramDict = {
+                'paramName': param_parts[0].strip(),
+                'paramType': param_parts[1].strip()
+            }
         
         bodyLines = []
         linesConsumed = 1
@@ -231,8 +262,7 @@ class SigmaInterpreter:
             linesConsumed += 1
         
         self.functions[funcName] = {
-            'paramName': paramName,
-            'paramType': paramType,
+            'params': paramDict,
             'body': bodyLines
         }
         
@@ -290,13 +320,18 @@ class SigmaInterpreter:
         self.variables[varName] = value
 
     def executeYap(self, line: str) -> None:
-        match = re.match(r'yap\((\w+(?:\[\d+\])?)\)', line)
+        match = re.match(r'yap\((.*)\)', line)
         if not match:
             raise SyntaxError(f"Invalid yap statement: {line}")
-    
-        expr = match.group(1)
-        arrayMatch = re.match(r'(\w+)\[(\d+)\]', expr)
+
+        expr = match.group(1).strip()
         
+        if expr.startswith('call'):
+            result = self.executeFunctionCall(expr)
+            print(result)
+            return
+            
+        arrayMatch = re.match(r'(\w+)\[(\d+)\]', expr)
         if arrayMatch:
             arrName = arrayMatch.group(1)
             index = int(arrayMatch.group(2))
@@ -312,50 +347,70 @@ class SigmaInterpreter:
                 print(arr[index])
             else:
                 raise IndexError(f"Array index {index} out of bounds for array {arrName}")
-        else:
-            varName = expr
-            if varName not in self.variables:
-                raise NameError(f"Variable '{varName}' not found")
                 
-            print(self.variables[varName])
+        elif expr.startswith('"') and expr.endswith('"'):
+            print(expr.strip('"'))
+            
+        elif expr.replace('.','',1).isdigit():
+            print(float(expr) if '.' in expr else int(expr))
+            
+        elif expr in self.variables:
+            print(self.variables[expr])
+            
+        else:
+            try:
+                result = self.evaluateMathExpression(expr)
+                print(int(result) if result.is_integer() else result)
+            except:
+                raise NameError(f"Invalid expression in yap statement: {expr}")
 
     def executeFunctionCall(self, line: str) -> Any:
-        match = re.match(r'call\s+(\w+)\((\w+)\)', line)
+        match = re.match(r'call\s+(\w+)\((.*?)\)', line)
         if not match:
             raise SyntaxError(f"Invalid function call: {line}")
             
         funcName = match.group(1)
-        argName = match.group(2)
+        argName = match.group(2).strip()
         
         if funcName not in self.functions:
             raise NameError(f"Function '{funcName}' not found")
             
-        if argName not in self.variables:
-            raise NameError(f"Variable '{argName}' not found")
-            
         func = self.functions[funcName]
         
+        returnValue = None
         for bodyLine in func['body']:
-            executedLine = bodyLine.replace(func['paramName'], argName)
+            if func['params']:
+                if not argName:
+                    raise SyntaxError(f"Function '{funcName}' requires an argument")
+                if argName not in self.variables:
+                    raise NameError(f"Variable '{argName}' not found")
+                executedLine = bodyLine.replace(func['params']['paramName'], argName)
+            else:
+                executedLine = bodyLine
             
             if executedLine.startswith('its giving'):
-                return self.executeReturn(executedLine)
+                returnValue = self.executeReturn(executedLine)
             elif executedLine.startswith('yap'):
                 self.executeYap(executedLine)
+                
+        return returnValue if returnValue is not None else None
                 
     def executeReturn(self, line: str) -> Any:
         match = re.match(r'its\s+giving\s*\((.*)\)', line)
         if not match:
             raise SyntaxError(f"Invalid return statement: {line}")
-            
+                
         expr = match.group(1).strip()
         
-        try:
-            if expr in self.variables:
-                return self.variables[expr]
-            return self.evaluateMathExpression(expr)
-        except:
+        if expr in self.variables:
+            return self.variables[expr]
+        elif expr.startswith('"') and expr.endswith('"'):
             return expr.strip('"')
+        else:
+            try:
+                return self.evaluateMathExpression(expr)
+            except:
+                return expr
 
 def main():
     if len(sys.argv) != 2:

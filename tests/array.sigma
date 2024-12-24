@@ -1,0 +1,12 @@
+BEGIN
+rob * from sigma
+
+arrayzler<int> testArr = [1, 2, 3, 4]
+yap(testArr) // Outputs: [1, 2, 3, 4]
+//Final Verdict: PASSED
+
+testArr.asl(5)
+yap(testArr) // Outputs: [1, 2, 3, 4, 5]
+//Final Verdict: PASSED
+
+PERIOD

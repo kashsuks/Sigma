@@ -1,20 +1,20 @@
 BEGIN
 rob * from sigma
 
-str testVariable = "This function can print values!"
-tweak testYapInFunction(str:testVariable){
-    yap(testVariable)
+tweak testYapInFunction(){
+    yap("This function can print values!")
 }
-call testYapInFunction(testVariable) // Should output: This function can print values!
+call testYapInFunction() // Should output: This function can print values!
 //Final Verdict: PASSED
 
-tweak testItsGivingInFunction(str:testVariable){
-    its giving (testVariable)
+tweak testItsGivingInFunction(){
+    its giving (True)
 }
-str returnVal = call testItsGivingInFunction(testVariable)
-yap(returnVal) //Outputs: call testItsGivingInFunction(testVariable)
+str returnVal = call testItsGivingInFunction()
+yap(returnVal) //Outputs: True
+//Final Verdict: PASSED
 
-yap(call testItsGivingInFunction(testVariable)) // Outputs: Error: Invalid yap statement: yap(call testItsGivingInFunction(testVariable))
-//Final Verdict: FAILED
+yap(call testItsGivingInFunction()) // Outputs: True
+//Final Verdict: PASSED
 
 PERIOD

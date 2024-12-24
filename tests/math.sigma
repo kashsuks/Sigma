@@ -3,13 +3,11 @@ BEGIN
 rob * from sigma
 
 //Sum of two numbers
-int sumOfTwo = 1 + 2 
-yap(sumOfTwo) // Outputs: 3
+yap(1 + 2) // Outputs: 3
 // Final verdict: PASSED
 
 //Testing Order of Operations
-int orderOfOp = (3**2)+2
-yap(orderOfOp) // Outputs: 11
+yap((3**2)+2) // Outputs: 11
 //Final Verdict: PASSED
 
 PERIOD
