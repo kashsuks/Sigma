@@ -15,6 +15,6 @@ str returnVal = call testItsGivingInFunction(testVariable)
 yap(returnVal) //Outputs: call testItsGivingInFunction(testVariable)
 
 yap(call testItsGivingInFunction(testVariable)) // Outputs: Error: Invalid yap statement: yap(call testItsGivingInFunction(testVariable))
-//Final Verduct: FAILED
+//Final Verdict: FAILED
 
 PERIOD
