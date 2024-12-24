@@ -162,21 +162,49 @@ class SigmaInterpreter:
                 i += funcDef['linesConsumed']
                 continue
 
-            if '=' in line and 'call' in line:
-                self.handleFunctionAssignment(line)
+            if '=' in line:
+                if any(typeName in line for typeName in ['int', 'bool', 'str', 'float']):
+                    self.declareVariable(line)
+                else:
+                    self.executeAssignment(line)
             elif line.startswith('call'):
                 self.executeFunctionCall(line)
             elif '.asl(' in line:
                 self.executeArrayAppend(line)
             elif line.startswith('arrayzler'):
                 self.declareArray(line)
-            elif any(typeName in line for typeName in ['int', 'bool', 'str', 'float']):
-                self.declareVariable(line)
             elif line.startswith('yap'):
                 self.executeYap(line)
 
             i += 1
-            
+    
+    def executeAssignment(self, line: str) -> None:
+        parts = line.split('=')
+        if len(parts) != 2:
+            raise SyntaxError(f"Invalid assignment: {line}")
+        
+        varName = parts[0].strip()
+        value = parts[1].strip()
+        
+        if varName not in self.variables:
+            raise NameError(f"Variable '{varName}' not found")
+        
+        currentValue = self.variables[varName]
+        try:
+            evaluatedValue = self.evaluateMathExpression(value)
+            if isinstance(currentValue, int):
+                value = int(evaluatedValue)
+            elif isinstance(currentValue, float):
+                value = float(evaluatedValue)
+            elif isinstance(currentValue, bool):
+                value = value.lower() == 'true'
+            elif isinstance(currentValue, str):
+                value = value.strip('"')
+        except Exception as e:
+            raise TypeError(f"Invalid value type for assignment: {value}")
+        
+        self.variables[varName] = value
+
     def handleFunctionAssignment(self, line: str) -> None:
         parts = line.split('=')
         if len(parts) != 2:
@@ -296,27 +324,26 @@ class SigmaInterpreter:
         parts = line.split('=')
         if len(parts) != 2:
             raise SyntaxError(f"Invalid variable declaration: {line}")
-            
+                
         varDef = parts[0].strip()
         value = parts[1].strip()
         
         typeName, varName = varDef.split()
         varName = varName.strip()
         
-        if typeName in ['int', 'float']:
-            try:
-                evaluatedValue = self.evaluateMathExpression(value)
-                if typeName == 'int':
-                    value = int(evaluatedValue)
-                else:
-                    value = float(evaluatedValue)
-            except Exception as e:
-                raise SyntaxError(f"Invalid mathematical expression: {value}")
-        elif typeName == 'bool':
-            value = value.lower() == 'true'
-        elif typeName == 'str':
-            value = value.strip('"')
-            
+        try:
+            evaluatedValue = self.evaluateMathExpression(value)
+            if typeName == 'int':
+                value = int(evaluatedValue)
+            elif typeName == 'float':
+                value = float(evaluatedValue)
+            elif typeName == 'bool':
+                value = value.lower() == 'true'
+            elif typeName == 'str':
+                value = value.strip('"')
+        except Exception as e:
+            raise SyntaxError(f"Invalid value for type {typeName}: {value}")
+                
         self.variables[varName] = value
 
     def executeYap(self, line: str) -> None:

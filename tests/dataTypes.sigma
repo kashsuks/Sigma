@@ -1,0 +1,17 @@
+BEGIN
+rob * from sigma
+
+int testInt = 2
+yap(testInt) //Output: 2
+//Final Verdict: PASSED
+
+testInt = 2.7
+yap(testInt) //Output: 2
+//Final Verdict: PASSED
+
+float testfloat = 3.13
+yap(testfloat) //Output: 3.13
+//Final Verdict: PASSED
+
+
+PERIOD
